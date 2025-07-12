@@ -57,54 +57,74 @@ const RegisterPage = ({ onSuccess }) => {
     });
   };
   return (
-    <Form
-      {...formItemLayout}
-      form={form}
-      name="register"
-      onFinish={onFinish}
-      style={{ maxWidth: 1000 }}
-      scrollToFirstError
-    >
-      <Form.Item
-        name="username"
-        label="username"
-        rules={[{ required: true, message: "Vui lòng nhập tài khoản!" }]}
-      >
-        <Input />
-      </Form.Item>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+    <div className="bg-white shadow-lg rounded-2xl p-10 w-full max-w-xl">
+      <h2 className="text-3xl font-bold text-center text-blue-600 mb-6">Đăng ký tài khoản</h2>
 
-      <Form.Item
-        name="password"
-        label="password"
-        rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
-        hasFeedback
+      <Form
+        form={form}
+        name="register"
+        onFinish={onFinish}
+        layout="vertical"
+        scrollToFirstError
       >
-        <Input.Password />
-      </Form.Item>
+        <Form.Item
+          name="username"
+          label={<span className="font-semibold">Tên đăng nhập</span>}
+          rules={[{ required: true, message: "Vui lòng nhập tài khoản!" }]}
+        >
+          <Input className="py-2 px-4 rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+        </Form.Item>
 
-      <Form.Item
-        name="email"
-        label="email"
-        rules={[
-          {
-            type: "email",
-            message: "Email không hợp lệ!",
-          },
-          {
-            required: true,
-            message: "Vui lòng nhập email!",
-          },
-        ]}
-      >
-        <Input />
-      </Form.Item>
+        <Form.Item
+          name="password"
+          label={<span className="font-semibold">Mật khẩu</span>}
+          rules={[{ required: true, message: "Vui lòng nhập mật khẩu!" }]}
+          hasFeedback
+        >
+          <Input.Password className="py-2 px-4 rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+        </Form.Item>
 
-      <Form.Item {...tailFormItemLayout}>
-        <Button type="primary" htmlType="submit">
-          Đăng ký
-        </Button>
-      </Form.Item>
-    </Form>
+        <Form.Item
+          name="email"
+          label={<span className="font-semibold">Email</span>}
+          rules={[
+            {
+              type: "email",
+              message: "Email không hợp lệ!",
+            },
+            {
+              required: true,
+              message: "Vui lòng nhập email!",
+            },
+          ]}
+        >
+          <Input className="py-2 px-4 rounded-md border border-gray-300 focus:border-blue-500 focus:ring-blue-500" />
+        </Form.Item>
+
+        <Form.Item className="text-center mt-6">
+          <Button
+            type="primary"
+            htmlType="submit"
+            className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg text-white font-semibold shadow-md"
+          >
+            Đăng ký
+          </Button>
+        </Form.Item>
+
+        <Form.Item className="text-center">
+          <span className="text-gray-600 mr-2">Đã có tài khoản?</span>
+          <Button
+            type="default"
+            onClick={() => navigate("/login")}
+            className="border border-blue-600 text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg font-medium"
+          >
+            Đăng nhập
+          </Button>
+        </Form.Item>
+      </Form>
+    </div>
+  </div>
   );
 };
 

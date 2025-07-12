@@ -43,7 +43,7 @@ export default function ChatBox({ receiver }) {
             sender_id: data.sender_id,
             receiver_id: user.userid,
             content: data.content,
-            created_at: new Date().toISOString(),
+            timestamp: data.timestamp || new Date().toISOString(),
           },
         ]);
       }
@@ -72,7 +72,7 @@ export default function ChatBox({ receiver }) {
         sender_id: user.userid,
         receiver_id: receiver.userid,
         content: input,
-        created_at: new Date().toISOString(),
+        timestamp: new Date().toISOString(), // Temporary timestamp until server confirms
       },
     ]);
     setInput("");
@@ -102,7 +102,7 @@ export default function ChatBox({ receiver }) {
             >
               {msg.content}
               <div className="text-[10px] text-right mt-1 opacity-60">
-                {new Date(msg.created_at).toLocaleTimeString([], {
+                {new Date(msg.timestamp).toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
                 })}
