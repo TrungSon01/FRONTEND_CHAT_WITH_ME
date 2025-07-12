@@ -8,10 +8,10 @@ const getWebSocketUrl = () => {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "https://backendchatwithme-production.up.railway.app";
   
   if (isDevelopment) {
-    // For development, try WSS first, fallback to WS
+    // For development, use WS
     return "ws://localhost:3000";
   } else {
-    // For production (Railway), always use WSS
+    // For production (Vercel + Railway), always use WSS
     return apiBaseUrl.replace(/^https?:\/\//, 'wss://');
   }
 };
