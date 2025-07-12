@@ -2,7 +2,21 @@ import React, { useEffect, useRef, useState } from "react";
 import { http } from "../apis/config";
 import { useSelector } from "react-redux";
 
-const WS_URL = "ws://backendchatwithme-production.up.railway.app";
+// Determine WebSocket URL based on environment
+const getWebSocketUrl = () => {
+  const isDevelopment = import.meta.env.DEV;
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "https://backendchatwithme-production.up.railway.app";
+  
+  if (isDevelopment) {
+    // For development, use localhost with WSS if available, fallback to WS
+    return "wss://localhost:3000";
+  } else {
+    // For production, use the API base URL with WSS
+    return apiBaseUrl.replace(/^https?:\/\//, 'wss://');
+  }
+};
+
+const WS_URL = getWebSocketUrl();
 
 export default function ChatBox({ receiver }) {
   let user = useSelector((state) => state.userSlice.user);
@@ -27,13 +41,18 @@ export default function ChatBox({ receiver }) {
 
   useEffect(() => {
     if (!user) return;
-    console.log("WebSocket register user:", user); // Thêm dòng này
+    console.log("WebSocket register user:", user);
+    console.log("Connecting to WebSocket:", WS_URL);
+    
     ws.current = new window.WebSocket(WS_URL);
+    
     ws.current.onopen = () => {
+      console.log("✅ WebSocket connected successfully");
       ws.current.send(
         JSON.stringify({ type: "register", user_id: user.userid })
       );
     };
+    
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
       if (data.type === "message" && data.sender_id === receiver.userid) {
@@ -48,6 +67,15 @@ export default function ChatBox({ receiver }) {
         ]);
       }
     };
+    
+    ws.current.onerror = (error) => {
+      console.error("❌ WebSocket connection error:", error);
+    };
+    
+    ws.current.onclose = (event) => {
+      console.log("🔌 WebSocket connection closed:", event.code, event.reason);
+    };
+    
     return () => ws.current && ws.current.close();
   }, [user, receiver]);
 

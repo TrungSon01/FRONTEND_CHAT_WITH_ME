@@ -7,7 +7,7 @@ export default defineConfig({
     host: true, // Cho phép truy cập từ IP LAN
     port: 5173,
     allowedHosts: [
-      "3a4e-14-231-180-177.ngrok-free.app", // Thêm domain ngrok vào đây
+      "864df9a04d89.ngrok-free.app", // Thêm domain ngrok vào đây
       "localhost",
       "3000",
     ],
