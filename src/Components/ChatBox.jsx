@@ -57,20 +57,38 @@ export default function ChatBox({ receiver }) {
     };
     
     ws.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log("📨 Received WebSocket message:", data);
-      
-      if (data.type === "message") {
-        // Add message regardless of sender (for both sent and received messages)
-        setMessages((prev) => [
-          ...prev,
-          {
-            sender_id: data.sender_id,
-            receiver_id: user.userid,
-            content: data.content,
-            timestamp: data.timestamp || new Date().toISOString(),
-          },
-        ]);
+      try {
+        const data = JSON.parse(event.data);
+        console.log("📨 Received WebSocket message:", data);
+        
+        if (data.type === "message") {
+          // Check if this is a message for current chat
+          const isForCurrentChat = 
+            (data.sender_id === user.userid && data.receiver_id === receiver?.userid) ||
+            (data.sender_id === receiver?.userid && data.receiver_id === user.userid);
+          
+          if (isForCurrentChat) {
+            console.log("✅ Adding message to current chat");
+            setMessages((prev) => {
+              // Remove any temporary messages with same content
+              const filteredPrev = prev.filter(msg => !(msg.temp && msg.content === data.content));
+              
+              return [
+                ...filteredPrev,
+                {
+                  sender_id: data.sender_id,
+                  receiver_id: data.receiver_id || user.userid,
+                  content: data.content,
+                  timestamp: data.timestamp || new Date().toISOString(),
+                },
+              ];
+            });
+          } else {
+            console.log("⚠️ Message not for current chat, ignoring");
+          }
+        }
+      } catch (error) {
+        console.error("❌ Error parsing WebSocket message:", error);
       }
     };
     
@@ -110,25 +128,44 @@ export default function ChatBox({ receiver }) {
 
   const sendMessage = (e) => {
     e.preventDefault();
-    if (!input.trim() || !ws.current || ws.current.readyState !== 1 || !user || !user.userid || !receiver || !receiver.userid) return;
+    if (!input.trim() || !user || !user.userid || !receiver || !receiver.userid) return;
     
-    console.log("📤 Sending message:", {
+    // Check WebSocket connection
+    if (!ws.current || ws.current.readyState !== 1) {
+      console.error("❌ WebSocket not connected, cannot send message");
+      alert("Không thể kết nối. Vui lòng thử lại.");
+      return;
+    }
+    
+    const messageData = {
       type: "message",
       sender_id: user.userid,
       receiver_id: receiver.userid,
       content: input,
-    });
+    };
     
-    ws.current.send(
-      JSON.stringify({
-        type: "message",
-        sender_id: user.userid,
-        receiver_id: receiver.userid,
-        content: input,
-      })
-    );
+    console.log("📤 Sending message:", messageData);
     
-    // Don't add message immediately, wait for server confirmation
+    // Add message immediately for better UX
+    const tempMessage = {
+      sender_id: user.userid,
+      receiver_id: receiver.userid,
+      content: input,
+      timestamp: new Date().toISOString(),
+      temp: true, // Mark as temporary
+    };
+    
+    setMessages((prev) => [...prev, tempMessage]);
+    
+    try {
+      ws.current.send(JSON.stringify(messageData));
+      console.log("✅ Message sent via WebSocket");
+    } catch (error) {
+      console.error("❌ Failed to send message via WebSocket:", error);
+      // Remove temp message if failed
+      setMessages((prev) => prev.filter(msg => msg !== tempMessage));
+    }
+    
     setInput("");
   };
 
