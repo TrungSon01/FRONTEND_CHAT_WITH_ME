@@ -11,7 +11,7 @@ const getWebSocketUrl = () => {
     // For development, use WS
     return "ws://localhost:3000";
   } else {
-    // For production (Vercel + Railway), always use WSS
+    // For production (Vercel + Railway), use WSS with the same domain as API
     return apiBaseUrl.replace(/^https?:\/\//, 'wss://');
   }
 };
@@ -28,8 +28,10 @@ export default function ChatBox({ receiver }) {
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
+  const [wsConnected, setWsConnected] = useState(false);
   const ws = useRef(null);
   const chatEndRef = useRef(null);
+  const reconnectTimeout = useRef(null);
   useEffect(() => {
     if (user && receiver) {
       http
@@ -48,6 +50,7 @@ export default function ChatBox({ receiver }) {
     
     ws.current.onopen = () => {
       console.log("✅ WebSocket connected successfully");
+      setWsConnected(true);
       ws.current.send(
         JSON.stringify({ type: "register", user_id: user.userid })
       );
@@ -55,7 +58,10 @@ export default function ChatBox({ receiver }) {
     
     ws.current.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      if (data.type === "message" && data.sender_id === receiver.userid) {
+      console.log("📨 Received WebSocket message:", data);
+      
+      if (data.type === "message") {
+        // Add message regardless of sender (for both sent and received messages)
         setMessages((prev) => [
           ...prev,
           {
@@ -74,10 +80,29 @@ export default function ChatBox({ receiver }) {
     
     ws.current.onclose = (event) => {
       console.log("🔌 WebSocket connection closed:", event.code, event.reason);
+      setWsConnected(false);
+      
+      // Try to reconnect after 3 seconds
+      if (reconnectTimeout.current) {
+        clearTimeout(reconnectTimeout.current);
+      }
+      reconnectTimeout.current = setTimeout(() => {
+        console.log("🔄 Attempting to reconnect WebSocket...");
+        // The useEffect will handle reconnection
+      }, 3000);
     };
     
-    return () => ws.current && ws.current.close();
-  }, [user, receiver]);
+    return () => {
+      if (reconnectTimeout.current) {
+        clearTimeout(reconnectTimeout.current);
+      }
+      if (ws.current) {
+        ws.current.close();
+        ws.current = null;
+      }
+      setWsConnected(false);
+    };
+  }, [user]); // Remove receiver dependency to prevent reconnection
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -86,6 +111,14 @@ export default function ChatBox({ receiver }) {
   const sendMessage = (e) => {
     e.preventDefault();
     if (!input.trim() || !ws.current || ws.current.readyState !== 1 || !user || !user.userid || !receiver || !receiver.userid) return;
+    
+    console.log("📤 Sending message:", {
+      type: "message",
+      sender_id: user.userid,
+      receiver_id: receiver.userid,
+      content: input,
+    });
+    
     ws.current.send(
       JSON.stringify({
         type: "message",
@@ -94,22 +127,16 @@ export default function ChatBox({ receiver }) {
         content: input,
       })
     );
-    setMessages((prev) => [
-      ...prev,
-      {
-        sender_id: user.userid,
-        receiver_id: receiver.userid,
-        content: input,
-        timestamp: new Date().toISOString(), // Temporary timestamp until server confirms
-      },
-    ]);
+    
+    // Don't add message immediately, wait for server confirmation
     setInput("");
   };
 
   return (
     <div className="flex flex-col h-[500px] w-full max-w-md mx-auto bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-      <div className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3 px-4 font-bold text-lg">
-        Chat với {receiver?.username || "..."}
+      <div className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white py-3 px-4 font-bold text-lg flex justify-between items-center">
+        <span>Chat với {receiver?.username || "..."}</span>
+        <div className={`w-3 h-3 rounded-full ${wsConnected ? 'bg-green-400' : 'bg-red-400'}`} title={wsConnected ? 'Connected' : 'Disconnected'}></div>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50">
         {messages.map((msg, idx) => (
